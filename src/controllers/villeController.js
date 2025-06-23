@@ -1,67 +1,92 @@
-const dataService = require('../services/dataService');
-
-// Fonction pour obtenir toutes les villes sans limite (pour des cas spécifiques)
-exports.getAllVillesNoLimit = (req, res) => {
-    const villes = dataService.getVilles();
-    res.json(villes);
-};
+// src/controllers/villeController.js
+const Ville = require('../models/Ville');
 
 // Fonction pour obtenir toutes les villes (avec pagination optionnelle)
-exports.getAllVilles = (req, res) => {
-    const villes = dataService.getVilles();
+exports.getAllVilles = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
+    const skip = (page - 1) * limit;
 
-    const results = {};
+    try {
+        const totalVilles = await Ville.countDocuments();
+        const villes = await Ville.find()
+                                   .skip(skip)
+                                   .limit(limit)
+                                   .lean(); // .lean() pour obtenir des objets JavaScript simples, plus rapides
 
-    if (endIndex < villes.length) {
-        results.next = {
-            page: page + 1,
-            limit: limit
-        };
+        const results = {};
+        if (page * limit < totalVilles) {
+            results.next = {
+                page: page + 1,
+                limit: limit
+            };
+        }
+        if (skip > 0) {
+            results.previous = {
+                page: page - 1,
+                limit: limit
+            };
+        }
+
+        results.total = totalVilles;
+        results.data = villes;
+        res.json(results);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des villes paginées:", error);
+        res.status(500).json({ message: 'Erreur serveur lors de la récupération des villes.' });
     }
+};
 
-    if (startIndex > 0) {
-        results.previous = {
-            page: page - 1,
-            limit: limit
-        };
+// Fonction pour obtenir toutes les villes sans limites
+exports.getAllVillesNoLimit = async (req, res) => {
+    try {
+        const villes = await Ville.find().lean();
+        res.json(villes);
+    } catch (error) {
+        console.error("Erreur lors de la récupération de toutes les villes sans limite:", error);
+        res.status(500).json({ message: 'Erreur serveur lors de la récupération de toutes les villes.' });
     }
-
-    results.total = villes.length;
-    results.data = villes.slice(startIndex, endIndex);
-    res.json(results);
 };
 
 // Fonction pour obtenir une ville par son code postal ou nom
-exports.getVilleByQuery = (req, res) => {
-    const query = req.params.query.toLowerCase();
-    const villes = dataService.getVilles();
+exports.getVilleByQuery = async (req, res) => {
+    const query = req.params.query; // MongoDB gère la case-insensibilité avec les index textuels ou des regex
+    try {
+        const filteredVilles = await Ville.find({
+            $or: [
+                { code_postal: { $regex: query, $options: 'i' } }, // Recherche insensible à la casse
+                { nom_de_la_commune: { $regex: query, $options: 'i' } }
+                // Si vous avez créé un index textuel, vous pouvez utiliser:
+                // { $text: { $search: query } }
+                // Note: La recherche textuelle est plus complexe à utiliser avec $or et d'autres critères.
+                // Les regex ($options: 'i') sont souvent suffisantes pour de petites recherches simples.
+            ]
+        }).lean();
 
-    const filteredVilles = villes.filter(ville =>
-        ville.code_postal.includes(query) ||
-        ville.nom_de_la_commune.toLowerCase().includes(query)
-    );
-
-    if (filteredVilles.length > 0) {
-        res.json(filteredVilles);
-    } else {
-        res.status(404).json({ message: 'Ville(s) non trouvée(s).' });
+        if (filteredVilles.length > 0) {
+            res.json(filteredVilles);
+        } else {
+            res.status(404).json({ message: 'Ville(s) non trouvée(s).' });
+        }
+    } catch (error) {
+        console.error("Erreur lors de la recherche des villes:", error);
+        res.status(500).json({ message: 'Erreur serveur lors de la recherche.' });
     }
 };
 
 // Fonction pour obtenir une ville par son code INSEE
-exports.getVilleByInseeCode = (req, res) => {
+exports.getVilleByInseeCode = async (req, res) => {
     const codeInsee = req.params.codeInsee;
-    const villes = dataService.getVilles();
+    try {
+        const ville = await Ville.findOne({ code_commune_insee: codeInsee }).lean();
 
-    const ville = villes.find(v => v.code_commune_insee === codeInsee);
-
-    if (ville) {
-        res.json(ville);
-    } else {
-        res.status(404).json({ message: 'Ville non trouvée.' });
+        if (ville) {
+            res.json(ville);
+        } else {
+            res.status(404).json({ message: 'Ville non trouvée.' });
+        }
+    } catch (error) {
+        console.error("Erreur lors de la récupération de la ville par code INSEE:", error);
+        res.status(500).json({ message: 'Erreur serveur lors de la récupération.' });
     }
 };
