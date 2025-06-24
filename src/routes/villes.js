@@ -17,4 +17,18 @@ router.get('/search/:query', villeController.getVilleByQuery);
 // GET /api/villes/:codeInsee
 router.get('/:codeInsee', villeController.getVilleByInseeCode);
 
+
+// --- CREATE Route ---
+// POST /api/villes
+router.post('/', villeController.createVille);
+
+// --- UPDATE Route ---
+// PUT /api/villes/:codeInsee
+// Utilisez PUT si vous voulez remplacer entièrement un document.
+router.put('/:codeInsee', villeController.updateVille);
+
+// --- DELETE Route ---
+// DELETE /api/villes/:codeInsee
+router.delete('/:codeInsee', villeController.deleteVille);
+
 module.exports = router;

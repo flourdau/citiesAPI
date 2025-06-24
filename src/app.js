@@ -5,18 +5,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const villesRoutes = require('./routes/villes');
-const connectDB = require('./config/db'); // Importe la fonction de connexion DB
+const connectDB = require('./config/db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
-// Connecter à MongoDB
 connectDB();
-    
-// Middleware pour analyser le corps des requêtes en JSON
+
 app.use(express.json());
 
-// Middleware CORS pour autoriser les requêtes cross-origin
 app.use(cors());
 
 // Définition des routes de l'API
