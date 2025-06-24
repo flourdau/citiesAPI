@@ -6,7 +6,7 @@ Create by flourdau & Google Gemini
 
 ## Documentation de l'API des Villes de France
 
-Cette API RESTful permet de gérer et de consulter les données des villes de France, basées sur les informations postales.
+Cette API RESTful permet de gérer et de consulter les données des villes de France, basées sur les informations de la poste.
 
 **URL de base de l'API :** `http://localhost:3000/api/villes`
 
@@ -297,7 +297,3 @@ Cette route permet de supprimer une ville de la base de données.
     ```
 
 -----
-
-Cette documentation devrait vous aider à bien comprendre et utiliser toutes les routes de votre API. Pensez à la mettre à jour chaque fois que vous ajoutez ou modifiez des fonctionnalités \!
-
-Y a-t-il d'autres aspects de votre API que vous souhaiteriez documenter ou améliorer ?
