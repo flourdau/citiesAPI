@@ -297,3 +297,178 @@ Cette route permet de supprimer une ville de la base de données.
     ```
 
 -----
+
+-----
+
+Super \! Il est tout aussi important de documenter les routes d'authentification que les routes de gestion des villes. Une bonne documentation assure que n'importe quel consommateur de votre API (qu'il s'agisse d'un front-end, d'une autre API ou d'un développeur) comprendra comment s'authentifier et interagir avec les ressources protégées.
+
+Voici la documentation pour vos routes d'authentification :
+
+-----
+
+## Documentation de l'API des Villes de France
+
+### Authentification et Autorisation (JWT)
+
+Votre API utilise des **JSON Web Tokens (JWT)** pour l'authentification et l'autorisation.
+Pour accéder aux routes protégées (actuellement les opérations `POST`, `PUT`, `DELETE` sur `/api/villes`), vous devrez d'abord obtenir un token JWT via les routes d'authentification, puis inclure ce token dans l'en-tête de vos requêtes.
+
+**Rôle :**
+Actuellement, deux rôles sont définis pour les utilisateurs :
+
+  * `user` : Rôle par défaut, accès en lecture uniquement sur les routes publiques.
+  * `admin` : Accès complet (lecture et écriture/modification/suppression) aux routes protégées.
+
+-----
+
+### Processus d'Authentification
+
+1.  **Enregistrement** : Un nouvel utilisateur s'inscrit en fournissant un nom d'utilisateur et un mot de passe.
+2.  **Connexion** : Un utilisateur existant se connecte avec ses identifiants. En cas de succès, l'API renvoie un token JWT.
+3.  **Accès aux ressources protégées** : Ce token doit être inclus dans l'en-tête `Authorization` de chaque requête vers une ressource protégée, au format `Bearer <token>`.
+
+-----
+
+### 5\. Routes d'Authentification (Auth Routes)
+
+Ces routes permettent aux utilisateurs de s'enregistrer et de se connecter pour obtenir un token JWT.
+
+**URL de base de l'authentification :** `http://localhost:3000/api/auth`
+
+#### 5.1. Enregistrer un nouvel utilisateur
+
+Permet de créer un nouveau compte utilisateur dans le système.
+
+  * **Endpoint :** `/api/auth/register`
+  * **Méthode :** `POST`
+  * **Accès :** Public
+  * **Corps de la Requête (Request Body) :** JSON avec les informations de l'utilisateur.
+      * **Champs requis :**
+          * `username` (string) : Nom d'utilisateur unique.
+          * `password` (string) : Mot de passe (minimum 6 caractères).
+          * `role` (string, optionnel) : Rôle de l'utilisateur (`user` ou `admin`). Par défaut à `user`.
+      * **Exemple de corps :**
+        ```json
+        {
+            "username": "monutilisateur",
+            "password": "monmotdepasse",
+            "role": "user"
+        }
+        ```
+  * **Exemple de Requête :**
+    ```
+    POST http://localhost:3000/api/auth/register
+    Content-Type: application/json
+
+    {
+        "username": "monutilisateur",
+        "password": "monmotdepasse",
+        "role": "user"
+    }
+    ```
+  * **Exemple de Réponse (201 Created) :**
+    ```json
+    {
+        "_id": "60d...a3e",
+        "username": "monutilisateur",
+        "role": "user",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwZC4..dGEiLCJyb2xlIjoidXNlciIsImlhdCI6MTYyNDk1OTIwMCwiZXhwIjoxNjI0OTYyODAwfQ.XYZ123..."
+    }
+    ```
+  * **Exemple de Réponse (400 Bad Request) :**
+    ```json
+    {
+        "message": "Le nom d'utilisateur est déjà pris."
+    }
+    ```
+    ou
+    ```json
+    {
+        "message": "Le mot de passe doit contenir au moins 6 caractères"
+    }
+    ```
+
+#### 5.2. Connecter un utilisateur existant
+
+Authentifie un utilisateur et lui fournit un token JWT pour accéder aux ressources protégées.
+
+  * **Endpoint :** `/api/auth/login`
+  * **Méthode :** `POST`
+  * **Accès :** Public
+  * **Corps de la Requête (Request Body) :** JSON avec les identifiants de l'utilisateur.
+      * **Champs requis :**
+          * `username` (string) : Nom d'utilisateur.
+          * `password` (string) : Mot de passe.
+      * **Exemple de corps :**
+        ```json
+        {
+            "username": "monutilisateur",
+            "password": "monmotdepasse"
+        }
+        ```
+  * **Exemple de Requête :**
+    ```
+    POST http://localhost:3000/api/auth/login
+    Content-Type: application/json
+
+    {
+        "username": "monutilisateur",
+        "password": "monmotdepasse"
+    }
+    ```
+  * **Exemple de Réponse (200 OK) :**
+    ```json
+    {
+        "_id": "60d...a3e",
+        "username": "monutilisateur",
+        "role": "user",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwZC4..dGEiLCJyb2xlIjoidXNlciIsImlhdCI6MTYyNDk1OTMwMCwiZXhwIjoxNjI0OTYyOTAwfQ.ABC456..."
+    }
+    ```
+  * **Exemple de Réponse (400 Bad Request) :**
+    ```json
+    {
+        "message": "Nom d'utilisateur ou mot de passe invalide."
+    }
+    ```
+
+-----
+
+### 6\. Accès aux Routes Protégées
+
+Pour accéder aux routes nécessitant une authentification (comme `POST /api/villes`, `PUT /api/villes/:codeInsee`, `DELETE /api/villes/:codeInsee`), vous devez inclure le token JWT obtenu lors de la connexion dans l'en-tête `Authorization` de votre requête, au format `Bearer <TOKEN>`.
+
+  * **Header requis :**
+      * `Authorization`: `Bearer VOTRE_TOKEN_JWT`
+  * **Exemple de Requête (vers une route protégée) :**
+    ```
+    POST http://localhost:3000/api/villes
+    Content-Type: application/json
+    Authorization: Bearer VOTRE_TOKEN_JWT_ADMIN
+
+    {
+        "code_commune_insee": "10000",
+        "nom_de_la_commune": "VILLE_PROTEGEE",
+        "code_postal": "10000"
+    }
+    ```
+  * **Exemple de Réponse (401 Unauthorized) :** Si le token est manquant, invalide ou expiré.
+    ```json
+    {
+        "message": "Non autorisé, aucun token fourni."
+    }
+    ```
+    ou
+    ```json
+    {
+        "message": "Non autorisé, token invalide ou expiré."
+    }
+    ```
+  * **Exemple de Réponse (403 Forbidden) :** Si le token est valide mais que l'utilisateur n'a pas les permissions requises (ex: un utilisateur avec le rôle `user` tente d'accéder à une route `admin`).
+    ```json
+    {
+        "message": "Accès non autorisé. Seuls les rôles admin peuvent accéder à cette ressource."
+    }
+    ```
+
+-----

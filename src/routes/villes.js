@@ -1,21 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const villeController = require('../controllers/villeController');
+const { protect, authorize } = require('../middleware/authMiddleware'); // Importe les middlewares
 
-// GET /api/villes/all
+// --- READ Routes (accessibles à tous, même non authentifiés) ---
 router.get('/all', villeController.getAllVillesNoLimit);
-
-// Route pour obtenir toutes les villes (avec pagination)
-// GET /api/villes?page=1&limit=10
 router.get('/', villeController.getAllVilles);
-
-// Route pour obtenir des villes par code postal ou nom (recherche textuelle)
-// GET /api/villes/search/:query
 router.get('/search/:query', villeController.getVilleByQuery);
-
-// Route pour obtenir une ville par son code INSEE
-// GET /api/villes/:codeInsee
 router.get('/:codeInsee', villeController.getVilleByInseeCode);
+
+// --- CRUD Routes Protégées (nécessitent authentification et rôle 'admin') ---
+// Toutes ces routes passeront d'abord par `protect` pour vérifier le token,
+// puis par `authorize('admin')` pour vérifier le rôle de l'utilisateur.
+
+// POST /api/villes (Créer une nouvelle ville)
+router.post('/', protect, authorize('admin'), villeController.createVille);
+
+// PUT /api/villes/:codeInsee (Mettre à jour une ville)
+router.put('/:codeInsee', protect, authorize('admin'), villeController.updateVille);
+
+// DELETE /api/villes/:codeInsee (Supprimer une ville)
+router.delete('/:codeInsee', protect, authorize('admin'), villeController.deleteVille);
+
+module.exports = router;
 
 
 // --- CREATE Route ---
